@@ -3,7 +3,7 @@ from typing import Generator
 
 import pytest
 from dotenv import load_dotenv
-from postgres_mcp.sql import reset_postgres_version_cache
+from postgres_mcp_pro_plus.sql import reset_postgres_version_cache
 from utils import create_postgres_container
 
 load_dotenv()

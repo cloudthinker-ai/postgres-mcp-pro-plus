@@ -11,11 +11,11 @@ from unittest.mock import patch
 import pytest
 import pytest_asyncio
 from pglast import parse_sql
-from postgres_mcp.artifacts import ExplainPlanArtifact
-from postgres_mcp.index.dta_calc import ColumnCollector
-from postgres_mcp.index.dta_calc import ConditionColumnCollector
-from postgres_mcp.index.dta_calc import DatabaseTuningAdvisor
-from postgres_mcp.index.dta_calc import IndexRecommendation
+from postgres_mcp_pro_plus.artifacts import ExplainPlanArtifact
+from postgres_mcp_pro_plus.index.dta_calc import ColumnCollector
+from postgres_mcp_pro_plus.index.dta_calc import ConditionColumnCollector
+from postgres_mcp_pro_plus.index.dta_calc import DatabaseTuningAdvisor
+from postgres_mcp_pro_plus.index.dta_calc import IndexRecommendation
 
 logger = getLogger(__name__)
 

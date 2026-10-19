@@ -311,7 +311,7 @@ class VacuumAnalysisTool:
         bloat_data = analysis_results.get("bloat_analysis", {})
         high_priority_bloat = bloat_data.get("high_priority_tables", [])
 
-        for table in high_priority_bloat[:5]:  # Top 5 priority tables
+        for table in high_priority_bloat[:10000]:  # Top 10000 priority tables
             if table["bloat_severity"] == "CRITICAL":
                 recommendations.append(
                     {
@@ -339,7 +339,7 @@ class VacuumAnalysisTool:
         autovacuum_data = analysis_results.get("autovacuum_analysis", {})
         problematic_autovacuum = autovacuum_data.get("problematic_tables", [])
 
-        for table in problematic_autovacuum[:3]:  # Top 3 autovacuum issues
+        for table in problematic_autovacuum[:10000]:  # Top 10000 autovacuum issues
             if table["autovacuum_status"] == "OVERDUE":
                 recommendations.append(
                     {
@@ -356,7 +356,7 @@ class VacuumAnalysisTool:
         performance_data = analysis_results.get("vacuum_performance", {})
         stale_tables = performance_data.get("stale_tables", [])
 
-        for table in stale_tables[:3]:  # Top 3 stale tables
+        for table in stale_tables[:10000]:  # Top 10000 stale tables
             if table["hours_since_last_vacuum"] > 168:  # >1 week
                 recommendations.append(
                     {
@@ -498,7 +498,7 @@ class VacuumAnalysisTool:
                     "recommended_value": "custom per table",
                     "reason": f"{len(large_bloated_tables)} large tables with high bloat",
                     "impact": "Tailored autovacuum behavior for large tables",
-                    "example_tables": [t["qualified_name"] for t in large_bloated_tables[:3]],
+                    "example_tables": [t["qualified_name"] for t in large_bloated_tables[:10000]],
                 }
             )
 
@@ -547,7 +547,7 @@ class VacuumAnalysisTool:
                 out.append("BloatSeverity: " + " ".join(parts))
             high_priority = bloat_analysis.get("high_priority_tables", [])
             if high_priority:
-                for table in high_priority[:10]:
+                for table in high_priority[:10000]:
                     out.append(
                         "Bloat: "
                         f"{table.get('qualified_name')} dead%={table.get('dead_percentage'):.1f} "
@@ -565,7 +565,7 @@ class VacuumAnalysisTool:
                 out.append("AutovacuumStatus: " + " ".join(parts))
             problematic = autovacuum_analysis.get("problematic_tables", [])
             if problematic:
-                for table in problematic[:10]:
+                for table in problematic[:10000]:
                     out.append(
                         "Auto: "
                         f"{table.get('qualified_name')} status={table.get('autovacuum_status')} dead={table.get('dead_tuples')} "
@@ -578,7 +578,7 @@ class VacuumAnalysisTool:
         if vacuum_performance:
             stale_tables = vacuum_performance.get("stale_tables", [])
             if stale_tables:
-                for table in stale_tables[:5]:
+                for table in stale_tables[:10000]:
                     out.append(
                         "Stale: "
                         f"{table.get('qualified_name')} hrs={table.get('hours_since_last_vacuum'):.1f} "
@@ -586,7 +586,7 @@ class VacuumAnalysisTool:
                     )
             high_mod_tables = vacuum_performance.get("high_modification_tables", [])
             if high_mod_tables:
-                for table in high_mod_tables[:5]:
+                for table in high_mod_tables[:10000]:
                     out.append(
                         "HighMods: "
                         f"{table.get('qualified_name')} mods={table.get('total_modifications')} vac={table.get('vacuum_count')} auto={table.get('autovacuum_count')}"

@@ -638,7 +638,7 @@ class SchemaMappingTool:
             # Schema metrics
             schema_metrics = schema_analysis.get("schema_metrics", [])
             if schema_metrics:
-                for i, schema in enumerate(schema_metrics[:5], 1):
+                for i, schema in enumerate(schema_metrics[:10000], 1):
                     level = self._get_coupling_display(schema)
                     line = (
                         f"Schema{i}: {schema['schema']} level={level} "
@@ -653,7 +653,7 @@ class SchemaMappingTool:
             # Dependency chains
             dependency_chains = schema_analysis.get("dependency_chains", [])
             if dependency_chains:
-                chains = [" -> ".join(chain) for chain in dependency_chains[:5]]
+                chains = [" -> ".join(chain) for chain in dependency_chains[:10000]]
                 out.append("Chains: " + " | ".join(chains))
 
         # Table Analysis
@@ -674,7 +674,7 @@ class SchemaMappingTool:
             if hub_tables:
                 hubs = [
                     f"{t['qualified_name']} in_fks={t['incoming_fks']} size={self._format_bytes(t['size_bytes'])} rows={t['row_count']}"
-                    for t in hub_tables[:5]
+                    for t in hub_tables[:10000]
                 ]
                 out.append("Hubs: " + "; ".join(hubs))
 
@@ -684,10 +684,10 @@ class SchemaMappingTool:
                 isolated_count = len(isolated_tables)
                 out.append(f"Isolated: total={isolated_count}")
                 if isolated_count > 0:
-                    largest = [f"{t['qualified_name']} {self._format_bytes(t['size_bytes'])}" for t in isolated_tables[:5]]
+                    largest = [f"{t['qualified_name']} {self._format_bytes(t['size_bytes'])}" for t in isolated_tables[:10000]]
                     out.append("IsolatedLargest: " + "; ".join(largest))
 
-            output.append("")
+            out.append("")
 
         # Relationship Patterns
         relationship_patterns = result.get("relationship_patterns", {})
@@ -708,13 +708,13 @@ class SchemaMappingTool:
             schema_coupling = relationship_patterns.get("schema_coupling", {})
             if schema_coupling:
                 sorted_coupling = sorted(schema_coupling.items(), key=lambda x: x[1]["coupling_ratio"], reverse=True)
-                for schema, coupling_data in sorted_coupling[:5]:
+                for schema, coupling_data in sorted_coupling[:10000]:
                     out.append(
                         f"Coupling: {schema} level={coupling_data['coupling_level']} "
                         f"ratio={coupling_data['coupling_ratio']:.2f} ext_refs={coupling_data['external_references']}"
                     )
 
-            output.append("")
+            out.append("")
 
         # Recommendations
         recommendations = result.get("recommendations", [])

@@ -3,10 +3,10 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
-from postgres_mcp.server import AccessMode
-from postgres_mcp.server import get_sql_driver
-from postgres_mcp.sql import SafeSqlDriver
-from postgres_mcp.sql import SqlDriver
+from postgres_mcp_pro_plus.server import AccessMode
+from postgres_mcp_pro_plus.server import get_sql_driver
+from postgres_mcp_pro_plus.sql import SafeSqlDriver
+from postgres_mcp_pro_plus.sql import SqlDriver
 
 
 @pytest.mark.asyncio
@@ -25,8 +25,8 @@ async def test_force_readonly_enforcement():
     mock_execute.return_value = [SqlDriver.RowResult(cells={"test": "value"})]
 
     # Test UNRESTRICTED mode
-    with patch("postgres_mcp.server.current_access_mode", AccessMode.UNRESTRICTED), patch(
-        "postgres_mcp.server.db_connection", mock_conn_pool
+    with patch("postgres_mcp_pro_plus.server.current_access_mode", AccessMode.UNRESTRICTED), patch(
+        "postgres_mcp_pro_plus.server.db_connection", mock_conn_pool
     ), patch.object(SqlDriver, "_execute_with_connection", mock_execute):
         driver = await get_sql_driver()
         assert isinstance(driver, SqlDriver)
@@ -54,8 +54,8 @@ async def test_force_readonly_enforcement():
         assert mock_execute.call_args[1]["force_readonly"] is False
 
     # Test RESTRICTED mode
-    with patch("postgres_mcp.server.current_access_mode", AccessMode.RESTRICTED), patch(
-        "postgres_mcp.server.db_connection", mock_conn_pool
+    with patch("postgres_mcp_pro_plus.server.current_access_mode", AccessMode.RESTRICTED), patch(
+        "postgres_mcp_pro_plus.server.db_connection", mock_conn_pool
     ), patch.object(SqlDriver, "_execute_with_connection", mock_execute):
         driver = await get_sql_driver()
         assert isinstance(driver, SafeSqlDriver)

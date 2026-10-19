@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
-import postgres_mcp.server as server
+import postgres_mcp_pro_plus.server as server
 import pytest
 import pytest_asyncio
 

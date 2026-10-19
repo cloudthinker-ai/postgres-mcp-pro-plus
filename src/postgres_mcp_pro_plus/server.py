@@ -43,6 +43,8 @@ mcp = FastMCP("postgres-mcp-pro-plus")
 # Constants
 PG_STAT_STATEMENTS = "pg_stat_statements"
 HYPOPG_EXTENSION = "hypopg"
+DEFAULT_QUERY_TIMEOUT = 180  # Default timeout in seconds for restricted mode
+DEFAULT_CONNECTION_TIMEOUT = 180  # Default timeout in seconds for connection pool
 
 ResponseType = List[types.TextContent | types.ImageContent | types.EmbeddedResource]
 
@@ -57,9 +59,11 @@ class AccessMode(str, Enum):
 
 
 # Global variables
-db_connection = DbConnPool()
+connection_timeout = float(os.environ.get("CONNECTION_TIMEOUT", DEFAULT_CONNECTION_TIMEOUT))
+db_connection = DbConnPool(timeout=connection_timeout)
 current_access_mode = AccessMode.UNRESTRICTED
 shutdown_in_progress = False
+query_timeout = int(os.environ.get("QUERY_TIMEOUT", DEFAULT_QUERY_TIMEOUT))
 
 
 async def get_sql_driver() -> Union[SqlDriver, SafeSqlDriver]:
@@ -67,8 +71,8 @@ async def get_sql_driver() -> Union[SqlDriver, SafeSqlDriver]:
     base_driver = SqlDriver(conn=db_connection)
 
     if current_access_mode == AccessMode.RESTRICTED:
-        logger.debug("Using SafeSqlDriver with restrictions (RESTRICTED mode)")
-        return SafeSqlDriver(sql_driver=base_driver, timeout=30)  # 30 second timeout
+        logger.debug(f"Using SafeSqlDriver with restrictions (RESTRICTED mode), timeout={query_timeout}s")
+        return SafeSqlDriver(sql_driver=base_driver, timeout=query_timeout)
     else:
         logger.debug("Using unrestricted SqlDriver (UNRESTRICTED mode)")
         return base_driver
@@ -189,7 +193,7 @@ def format_query_results_as_text(results: list[dict]) -> str:
     out.append("Columns: " + ", ".join(columns))
 
     # Show first few rows in compact form
-    max_rows = min(5, len(results))
+    max_rows = min(10000, len(results))
     for i, row in enumerate(results[:max_rows], 1):
         parts = []
         for col in columns:
@@ -827,6 +831,11 @@ async def main():
         mcp.settings.host = args.sse_host
         mcp.settings.port = args.sse_port
         await mcp.run_sse_async()
+
+    # Close pool on normal exit (when stdin closes / transport returns).
+    # shutdown() only runs on SIGTERM/SIGINT, but the process typically exits
+    # normally before those signals arrive.
+    await db_connection.close()
 
 
 async def shutdown(sig=None):

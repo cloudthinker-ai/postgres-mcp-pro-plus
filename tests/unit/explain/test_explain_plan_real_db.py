@@ -2,10 +2,10 @@ import json
 import logging
 
 import pytest
-from postgres_mcp.artifacts import ErrorResult
-from postgres_mcp.artifacts import ExplainPlanArtifact
-from postgres_mcp.explain import ExplainPlanTool
-from postgres_mcp.sql import SqlDriver
+from postgres_mcp_pro_plus.artifacts import ErrorResult
+from postgres_mcp_pro_plus.artifacts import ExplainPlanArtifact
+from postgres_mcp_pro_plus.explain import ExplainPlanTool
+from postgres_mcp_pro_plus.sql import SqlDriver
 
 logger = logging.getLogger(__name__)
 

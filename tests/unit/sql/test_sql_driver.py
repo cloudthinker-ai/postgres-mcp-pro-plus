@@ -5,8 +5,8 @@ from unittest.mock import call
 from unittest.mock import patch
 
 import pytest
-from postgres_mcp.sql import DbConnPool
-from postgres_mcp.sql import SqlDriver
+from postgres_mcp_pro_plus.sql import DbConnPool
+from postgres_mcp_pro_plus.sql import SqlDriver
 
 
 class AsyncContextManagerMock(AsyncMock):
@@ -354,7 +354,7 @@ async def test_engine_url_connection():
     """Test connecting with engine_url instead of connection object."""
     db_pool = MagicMock(spec=DbConnPool)
 
-    with patch("postgres_mcp.sql.DbConnPool", return_value=db_pool):
+    with patch("postgres_mcp_pro_plus.sql.DbConnPool", return_value=db_pool):
         # Create SqlDriver with engine_url
         driver = SqlDriver(engine_url="postgresql://user:pass@localhost/db")
 

@@ -5,10 +5,10 @@ from functools import wraps
 
 import pytest
 import pytest_asyncio
-from postgres_mcp.index.dta_calc import DatabaseTuningAdvisor
-from postgres_mcp.index.index_opt_base import IndexTuningResult
-from postgres_mcp.sql import DbConnPool
-from postgres_mcp.sql import SqlDriver
+from postgres_mcp_pro_plus.index.dta_calc import DatabaseTuningAdvisor
+from postgres_mcp_pro_plus.index.index_opt_base import IndexTuningResult
+from postgres_mcp_pro_plus.sql import DbConnPool
+from postgres_mcp_pro_plus.sql import SqlDriver
 
 logger = logging.getLogger(__name__)
 

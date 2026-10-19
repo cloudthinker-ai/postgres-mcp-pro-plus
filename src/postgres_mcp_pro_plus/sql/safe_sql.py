@@ -945,8 +945,153 @@ class SafeSqlDriver(SqlDriver):
     def _validate(self, query: str) -> None:
         """Validate query is safe to execute"""
         try:
-            # Parse the SQL using pglast
-            parsed = pglast.parse_sql(query)
+            # Convert DB-API style placeholders (%s, %(name)s) to PostgreSQL-style ($1, $2, ...)
+            # for parsing purposes only. The original query is used for execution.
+            def _normalize_placeholders_for_parse(sql: str) -> str:
+                out: list[str] = []
+                i = 0
+                n = len(sql)
+                in_squote = False
+                in_dquote = False
+                in_line_comment = False
+                in_block_comment = False
+                dollar_tag: str | None = None
+                param_index = 1
+
+                def peek(k: int = 0) -> str:
+                    j = i + k
+                    return sql[j] if 0 <= j < n else ""
+
+                while i < n:
+                    ch = sql[i]
+                    # Handle line comments
+                    if in_line_comment:
+                        out.append(ch)
+                        if ch == "\n":
+                            in_line_comment = False
+                        i += 1
+                        continue
+                    # Handle block comments
+                    if in_block_comment:
+                        if ch == "*" and peek(1) == "/":
+                            out.append("*/")
+                            i += 2
+                            in_block_comment = False
+                        else:
+                            out.append(ch)
+                            i += 1
+                        continue
+                    # Handle dollar-quoted strings
+                    if dollar_tag is not None:
+                        if ch == "$":
+                            tag = dollar_tag
+                            token = f"${tag}$"
+                            if sql.startswith(token, i):
+                                out.append(token)
+                                i += len(token)
+                                dollar_tag = None
+                            else:
+                                out.append(ch)
+                                i += 1
+                        else:
+                            out.append(ch)
+                            i += 1
+                        continue
+                    # Handle single-quoted strings
+                    if in_squote:
+                        out.append(ch)
+                        if ch == "'":
+                            if peek(1) == "'":  # escaped quote ''
+                                out.append("'")
+                                i += 2
+                            else:
+                                in_squote = False
+                                i += 1
+                        else:
+                            i += 1
+                        continue
+                    # Handle double-quoted identifiers
+                    if in_dquote:
+                        out.append(ch)
+                        if ch == '"':
+                            if peek(1) == '"':  # escaped quote ""
+                                out.append('"')
+                                i += 2
+                            else:
+                                in_dquote = False
+                                i += 1
+                        else:
+                            i += 1
+                        continue
+
+                    # Outside of strings/comments
+                    # Detect start of comments
+                    if ch == "-" and peek(1) == "-":
+                        out.append("--")
+                        i += 2
+                        in_line_comment = True
+                        continue
+                    if ch == "/" and peek(1) == "*":
+                        out.append("/*")
+                        i += 2
+                        in_block_comment = True
+                        continue
+                    # Detect start of dollar-quoted string
+                    if ch == "$":
+                        # $tag$ or $$
+                        m = re.match(r"\$([A-Za-z_][A-Za-z0-9_]*)?\$", sql[i:])
+                        if m:
+                            tag = m.group(1) or ""
+                            out.append(m.group(0))
+                            i += len(m.group(0))
+                            dollar_tag = tag
+                            continue
+                    # Start of quoted strings/identifiers
+                    if ch == "'":
+                        in_squote = True
+                        out.append(ch)
+                        i += 1
+                        continue
+                    if ch == '"':
+                        in_dquote = True
+                        out.append(ch)
+                        i += 1
+                        continue
+
+                    # Replace DB-API placeholders outside of strings/comments
+                    if ch == "%":
+                        nxt = peek(1)
+                        if nxt == "s":
+                            out.append(f"${param_index}")
+                            param_index += 1
+                            i += 2
+                            continue
+                        if nxt == "(":
+                            # Named placeholder: %(<name>)s
+                            # Find the closing ")s"
+                            j = i + 2
+                            while j < n and sql[j] != ")":
+                                j += 1
+                            if j < n and peek(j - i + 1) == "s":
+                                out.append(f"${param_index}")
+                                param_index += 1
+                                i = j + 2
+                                continue
+                        # Not a placeholder we recognize, keep as-is
+                        out.append(ch)
+                        i += 1
+                        continue
+
+                    # Default: copy character
+                    out.append(ch)
+                    i += 1
+
+                return "".join(out)
+
+            query_for_parse = _normalize_placeholders_for_parse(query) if "%s" in query or "%(" in query else query
+
+            # Parse the SQL using pglast on the normalized query
+            parsed = pglast.parse_sql(query_for_parse)
             # Pretty print the parsed SQL for debugging
             # print("Parsed SQL:")
             # import pprint

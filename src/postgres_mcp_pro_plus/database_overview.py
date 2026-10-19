@@ -148,7 +148,19 @@ class DatabaseOverviewTool:
 
         except Exception as e:
             logger.error(f"Error generating database overview: {e!s}")
-            return {"error": str(e)}
+            # Ensure execution metadata is present even on error for better diagnostics
+            exec_time = time.time() - start_time
+            return {
+                "error": str(e),
+                "execution_metadata": {
+                    "max_tables": max_tables,
+                    "sampling_mode": sampling_mode,
+                    "timeout": self.timeout_seconds,
+                    "tables_analyzed": 0,
+                    "tables_skipped": 0,
+                    "execution_time": round(exec_time, 2),
+                },
+            }
 
     async def _get_user_schemas(self) -> list[str]:
         """Get list of user schemas (excluding system schemas)."""
@@ -410,10 +422,10 @@ class DatabaseOverviewTool:
 
     async def _add_top_tables_summary(self, db_info: dict[str, Any], all_tables_with_stats: list[dict[str, Any]]) -> None:
         """Add top tables summary for performance insights."""
-        # Top 5 tables by size
-        top_by_size = sorted(all_tables_with_stats, key=lambda x: x["size_bytes"], reverse=True)[:5]
-        # Top 5 most active tables
-        top_by_activity = sorted(all_tables_with_stats, key=lambda x: x["total_scans"], reverse=True)[:5]
+        # Top 10000 tables by size
+        top_by_size = sorted(all_tables_with_stats, key=lambda x: x["size_bytes"], reverse=True)[:10000]
+        # Top 10000 most active tables
+        top_by_activity = sorted(all_tables_with_stats, key=lambda x: x["total_scans"], reverse=True)[:10000]
 
         db_info["performance_overview"]["top_tables"] = {
             "largest": [
@@ -523,7 +535,7 @@ class DatabaseOverviewTool:
 
         if all_relationships:
             # Find most connected tables
-            most_connected = sorted(table_connections.items(), key=lambda x: x[1], reverse=True)[:5]
+            most_connected = sorted(table_connections.items(), key=lambda x: x[1], reverse=True)[:10000]
 
             # Find isolated tables
             all_table_keys = set()
@@ -541,7 +553,7 @@ class DatabaseOverviewTool:
                 to_table = f"{rel['to_schema']}.{rel['to_table']}"
                 relationship_patterns[to_table] = relationship_patterns.get(to_table, 0) + 1
 
-            hub_tables = sorted(relationship_patterns.items(), key=lambda x: x[1], reverse=True)[:5]
+            hub_tables = sorted(relationship_patterns.items(), key=lambda x: x[1], reverse=True)[:10000]
 
             insights = []
             if len(isolated_tables) > 0:
@@ -777,10 +789,10 @@ class DatabaseOverviewTool:
             )
             top_tables = perf_overview.get("top_tables", {})
             if top_tables.get("largest"):
-                largest = [f"{t['schema']}.{t['table']} {t['size_readable']}" for t in top_tables["largest"][:3]]
+                largest = [f"{t['schema']}.{t['table']} {t['size_readable']}" for t in top_tables["largest"][:10000]]
                 out.append("Largest: " + "; ".join(largest))
             if top_tables.get("most_active"):
-                active = [f"{t['schema']}.{t['table']} scans={t['total_scans']}" for t in top_tables["most_active"][:3]]
+                active = [f"{t['schema']}.{t['table']} scans={t['total_scans']}" for t in top_tables["most_active"][:10000]]
                 out.append("MostActive: " + "; ".join(active))
 
         # Security Overview
@@ -810,28 +822,28 @@ class DatabaseOverviewTool:
             if hotspots.get("high_scan_ratio_tables"):
                 items = [
                     f"{t['qualified_name']} r={t['seq_scan_ratio']}% sc={t['total_scans']} sz={t['size_mb']}MB sev={'H' if t['severity'] == 'HIGH' else 'M'}"
-                    for t in hotspots["high_scan_ratio_tables"][:5]
+                    for t in hotspots["high_scan_ratio_tables"][:10000]
                 ]
                 out.append("HighSeqScan: " + "; ".join(items))
             if hotspots.get("high_dead_tuple_tables"):
                 items = [
                     f"{t['qualified_name']} dead={t['dead_tuple_ratio']}% sz={t['size_mb']}MB sev={'H' if t['severity'] == 'HIGH' else 'M'}"
-                    for t in hotspots["high_dead_tuple_tables"][:5]
+                    for t in hotspots["high_dead_tuple_tables"][:10000]
                 ]
                 out.append("HighDeadTuples: " + "; ".join(items))
             if hotspots.get("large_tables_with_issues"):
                 items = [
                     f"{t['qualified_name']} sz={t['size_mb']}MB issues=[{', '.join(t.get('issues', []))}] sev={'H' if t['severity'] == 'HIGH' else 'M'}"
-                    for t in hotspots["large_tables_with_issues"][:5]
+                    for t in hotspots["large_tables_with_issues"][:10000]
                 ]
                 out.append("LargeWithIssues: " + "; ".join(items))
             if hotspots.get("high_modification_tables"):
-                items = [f"{t['qualified_name']} mods={t['total_modifications']}" for t in hotspots["high_modification_tables"][:5]]
+                items = [f"{t['qualified_name']} mods={t['total_modifications']}" for t in hotspots["high_modification_tables"][:10000]]
                 out.append("HighMod: " + "; ".join(items))
             if hotspots.get("tables_needing_maintenance"):
                 items = [
                     f"{t['qualified_name']} rec=[{', '.join(t.get('recommendations', []))}] prio={t.get('priority', 'MEDIUM')}"
-                    for t in hotspots["tables_needing_maintenance"][:5]
+                    for t in hotspots["tables_needing_maintenance"][:10000]
                 ]
                 out.append("Maintenance: " + "; ".join(items))
 
@@ -847,10 +859,10 @@ class DatabaseOverviewTool:
             )
             most_connected = rel_summary.get("most_connected_tables", [])
             if most_connected:
-                out.append("MostConnected: " + "; ".join([f"{t['table']}({t['connections']})" for t in most_connected[:5]]))
+                out.append("MostConnected: " + "; ".join([f"{t['table']}({t['connections']})" for t in most_connected[:10000]]))
             hub_tables = rel_summary.get("hub_tables", [])
             if hub_tables:
-                out.append("Hubs: " + "; ".join([f"{t['table']}({t['referenced_by']})" for t in hub_tables[:5]]))
+                out.append("Hubs: " + "; ".join([f"{t['table']}({t['referenced_by']})" for t in hub_tables[:10000]]))
             insights = rel_summary.get("relationship_insights", [])
             if insights:
                 out.append("RelInsights: " + "; ".join(insights))
@@ -875,7 +887,7 @@ class DatabaseOverviewTool:
                         [(name, info) for name, info in tables.items() if "size_bytes" in info],
                         key=lambda x: x[1]["size_bytes"],
                         reverse=True,
-                    )[:3]
+                    )[:10000]
                     if top_schema_tables:
                         tops = [f"{name} {info.get('size_readable', 'N/A')}" for name, info in top_schema_tables]
                         out.append("  Top: " + "; ".join(tops))

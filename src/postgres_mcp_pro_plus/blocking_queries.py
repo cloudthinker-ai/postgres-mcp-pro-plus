@@ -794,7 +794,7 @@ class BlockingQueriesAnalyzer:
 
             analysis = {"problematic_patterns": [], "recommendations": []}
 
-            for pattern, data in sorted_patterns[:5]:  # Top 5 patterns
+            for pattern, data in sorted_patterns[:10000]:  # Top 10000 patterns
                 avg_blocking_time = data["total_blocking_time"] / data["count"]
                 analysis["problematic_patterns"].append(
                     {
@@ -1026,7 +1026,7 @@ class BlockingQueriesAnalyzer:
         # Add session termination recommendations
         if session_termination_recs:
             recommendations.append("\n🎯 SESSION TERMINATION RECOMMENDATIONS:")
-            for rec in session_termination_recs[:3]:  # Top 3 recommendations
+            for rec in session_termination_recs[:10000]:  # Top 10000 recommendations
                 recommendations.append(f"   • {rec['priority']}: Terminate PID {rec['target_pid']} - {rec['reason']}")
 
         # Add timeout suggestions
@@ -1038,7 +1038,7 @@ class BlockingQueriesAnalyzer:
         # Add query pattern recommendations
         if query_pattern_analysis.get("problematic_patterns"):
             recommendations.append("\n🔍 QUERY PATTERN ANALYSIS:")
-            for pattern in query_pattern_analysis["problematic_patterns"][:2]:  # Top 2 patterns
+            for pattern in query_pattern_analysis["problematic_patterns"][:10000]:  # Top 10000 patterns
                 recommendations.append(
                     f"   • Optimize pattern with {pattern['frequency']} occurrences (avg blocking: {pattern['average_blocking_time']:.1f}s)"
                 )
@@ -1046,7 +1046,7 @@ class BlockingQueriesAnalyzer:
         # Add lock escalation recommendations
         if lock_escalation_info.get("detected_escalations"):
             recommendations.append("\n🔺 LOCK ESCALATION DETECTED:")
-            recommendations.extend([f"   • {rec}" for rec in lock_escalation_info["recommendations"][:2]])
+            recommendations.extend([f"   • {rec}" for rec in lock_escalation_info["recommendations"][:10000]])
 
         # Add historical analysis insights
         if historical_analysis.get("analysis", {}).get("potential_blocking_sources"):

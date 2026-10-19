@@ -2,9 +2,9 @@ import logging
 
 import pytest
 import pytest_asyncio
-from postgres_mcp.sql import SqlDriver
-from postgres_mcp.top_queries import PG_STAT_STATEMENTS
-from postgres_mcp.top_queries import TopQueriesCalc
+from postgres_mcp_pro_plus.sql import SqlDriver
+from postgres_mcp_pro_plus.top_queries import PG_STAT_STATEMENTS
+from postgres_mcp_pro_plus.top_queries import TopQueriesCalc
 
 logger = logging.getLogger(__name__)
 
@@ -155,8 +155,8 @@ async def test_extension_not_available(local_sql_driver):
     # Need to patch at the module level for proper mocking
     with pytest.MonkeyPatch().context() as mp:
         # Import the module we'll be monkeypatching
-        import postgres_mcp.sql.extension_utils
-        from postgres_mcp.sql.extension_utils import ExtensionStatus
+        import postgres_mcp_pro_plus.sql.extension_utils
+        from postgres_mcp_pro_plus.sql.extension_utils import ExtensionStatus
 
         # Define our mock function with the correct type signature
         async def mock_check(*args, **kwargs):
@@ -170,7 +170,7 @@ async def test_extension_not_available(local_sql_driver):
 
         # Replace the function with our mock
         # We need to patch the actual function imported by TopQueriesCalc
-        mp.setattr(postgres_mcp.top_queries.top_queries_calc, "check_extension", mock_check)
+        mp.setattr(postgres_mcp_pro_plus.top_queries.top_queries_calc, "check_extension", mock_check)
 
         # Run the test
         result = await calc.get_top_queries_by_time()

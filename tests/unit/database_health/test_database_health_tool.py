@@ -1,8 +1,8 @@
 import logging
 
 import pytest
-from postgres_mcp.database_health import DatabaseHealthTool
-from postgres_mcp.sql import SqlDriver
+from postgres_mcp_pro_plus.database_health import DatabaseHealthTool
+from postgres_mcp_pro_plus.sql import SqlDriver
 
 logger = logging.getLogger(__name__)
 
